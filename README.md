@@ -35,7 +35,7 @@ npm start
 http://localhost:{port}/ping
 ```
 
-* Test that the proxy is able to forward requests directly in the browser using:
+* Test that the proxy is able to forward requests directly in the browser using one of your `serverUrls` definitions, such as:
 
 ```
 http://localhost:{port}/proxy/http/services.arcgisonline.com/ArcGIS/rest/services/?f=pjson
@@ -49,6 +49,13 @@ http://localhost:{port}/status
 
 Once you deploy to an infrastructure on the public internet replace `localhost` with the host name you install the proxy server on.
 
+## Requirements
+
+* node.js version 6.0 or higher (recommended.)
+* sudo access rights so you can install files, open a TCP/IP port.
+* file access read/write access for the log file and the sqlite database.
+* server administration and networking background to securely run your server.
+
 ## Folders and Files
 
 The proxy consists of the following files:
@@ -58,12 +65,20 @@ The proxy consists of the following files:
 * `node_modules/`: after you run `npm install` this folder holds all the node dependencies.
 * `bin/`: folder containing the proxy runtime scripts
 
-## Requirements
+## Running your proxy server
 
-* node.js version 6.0 or higher (recommended.)
-* sudo access rights so you can install files, open a TCP/IP port.
-* file access read/write access for the log file and the sqlite database.
-* server administration and networking background to securely run your server.
+Follow these instructions to setup and operate your proxy server.
+
+### Logging
+
+The proxy server can log to the console, a log file, or both. There are 4 levels of logging:
+
+  1. Errors: only log error conditions. Errors typically indicate normal functionality that has failed and should be addressed.
+  2. Warnings: show warnings and error conditions in the log. Warnings are soft errors that may require intervention.
+  3. Information: show informational messages, warnings, and errors. Information messages are useful for debugging your server setup.
+  4. None: show no log messages.
+
+You can configure the log file name and path to where it should go on your server.
 
 ### Example Configurations
 
