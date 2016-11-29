@@ -6,7 +6,7 @@
              logToConsole="true"
              mustMatch="true"
              useHTTPS="false"
-             port="3333"
+             port="3692"
              listenURI="/proxy"
              pingPath="/ping"
              statusPath="/status">

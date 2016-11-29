@@ -1,6 +1,6 @@
 {
     "ProxyConfig": {
-        "port": 3333,
+        "port": 3692,
         "useHTTPS": false,
         "mustMatch": true,
         "logLevel": "ALL",
