@@ -1,6 +1,6 @@
 # TO DO
 
-1. handle token exchange
+1. serve file
 1. remove test URLs from configs
 2. clean configs to a default version
 

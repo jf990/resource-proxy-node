@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ProxyConfig allowedReferers="*"
+             logFile="arcgis-proxy-node.log"
+             logFilePath="./"
+             logLevel="ALL"
+             logToConsole="true"
+             mustMatch="true"
+             useHTTPS="false"
+             port="3333"
+             listenURI="/proxy"
+             pingPath="/ping"
+             statusPath="/status">
+    <serverUrls>
+        <serverUrl url="http://services.arcgisonline.com"
+                   test="http://localhost:3333/proxy/http://services.arcgisonline.com"
+                   matchAll="true"/>
+        <serverUrl url="http://geoenrich.arcgis.com/arcgis/rest/services/World/GeoenrichmentServer/Geoenrichment/enrich?f=json&amp;studyAreas=[{%27geometry%27:{%27x%27:-117.1956,%27y%27:34.0572}}]&amp;token=N_YzjLgydmmH7VmYvcpdbqLkZJjBt0-8PSTcBoBluuzvF7G5cK_SMuzt9Hr6uyhoNgMvecr1YS7RuVMH8ictfv5HslAs06g5uM61LZ6x0jy2-lWr7dzdlSmJwExH-b-tbf3xerW-9pqsvAgFx1lp9w.."
+                   test="http://localhost:3333/proxy/http://geoenrich.arcgis.com/arcgis/rest/services/World/GeoenrichmentServer/Geoenrichment/enrich?f=json&amp;studyAreas=[{%27geometry%27:{%27x%27:-117.1956,%27y%27:34.0572}}]&amp;token=N_YzjLgydmmH7VmYvcpdbqLkZJjBt0-8PSTcBoBluuzvF7G5cK_SMuzt9Hr6uyhoNgMvecr1YS7RuVMH8ictfv5HslAs06g5uM61LZ6x0jy2-lWr7dzdlSmJwExH-b-tbf3xerW-9pqsvAgFx1lp9w.."
+                   matchAll="false"/>
+        <serverUrl url="http://sampleserver6.arcgisonline.com"
+                   test="http://localhost:3333/proxy/http://sampleserver6.arcgisonline.com"
+                   username="username"
+                   password="password"
+                   rateLimit="120"
+                   rateLimitPeriod="60"
+                   matchAll="true" />
+        <serverUrl url="demo.arcgis.com/ArcGIS/"
+                   test="http://localhost:3333/proxy/demo.arcgis.com/ArcGIS/"
+                   hostRedirect="http://services.arcgisonline.com/ArcGIS/rest/info/"
+                   rateLimit="120"
+                   rateLimitPeriod="1"
+                   matchAll="true" />
+        <serverUrl url="http://geocode.arcgis.com/arcgis/rest/services/Locators/ESRI_Geocode_USA/GeocodeServer/suggest"
+                   test="http://localhost:3333/proxy/http://geocode.arcgis.com/arcgis/rest/services/Locators/ESRI_Geocode_USA/GeocodeServer/suggest"
+                   rateLimit="120"
+                   rateLimitPeriod="1"
+                   matchAll="true" />
+        <serverUrl url="http://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
+                   test="http://localhost:3333/proxy/http://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
+                   oauth2Endpoint="https://www.arcgis.com/sharing/oauth2"
+                   username="username"
+                   password="password"
+                   clientId="6Xo1d-example-9Kn2"
+                   clientSecret="5a5d50-example-c867b6efcf969bdcc6a2"
+                   rateLimit="120"
+                   rateLimitPeriod="1"
+                   matchAll="true" />
+        <serverUrl url="http://route.arcgis.com/arcgis/rest/services/World/ClosestFacility/NAServer/ClosestFacility_World/solveClosestFacility"
+                   test="local.arcgis.com:3333/proxy/http/route.arcgis.com/arcgis/rest/services/World/ClosestFacility/NAServer/ClosestFacility_World/solveClosestFacility?f=json"
+                   oauth2Endpoint="https://www.arcgis.com/sharing/oauth2"
+                   clientId="6Xo1d-example-9Kn2"
+                   clientSecret="5a5d50-example-c867b6efcf969bdcc6a2"
+                   rateLimit="120"
+                   rateLimitPeriod="60"
+                   username="username"
+                   password="password"
+                   matchAll="true" />
+        <serverUrl url="http://server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer"
+                   test="http://localhost:3333/proxy/http/server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer"
+                   rateLimit="12"
+                   rateLimitPeriod="1"
+                   matchAll="true" />
+        <serverUrl url="http://maps.lakecountyil.gov/arcgis/rest/services/PublicWorks/PWCommonLayers/FeatureServer/14"
+                   test="http://localhost:3333/proxy/http/maps.lakecountyil.gov/arcgis/rest/services/PublicWorks/PWCommonLayers/FeatureServer/14"
+                   matchAll="true" />
+        <serverUrl url="http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson"
+                   test="http://localhost:3333/proxy/http://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson"
+                   matchAll="true" />
+    </serverUrls>
+</ProxyConfig>

@@ -35,3 +35,13 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+*~
+.DS_Store
+._*
+.idea/
+/out/
+.idea_modules/
+
+node_modules/
+*.sqlite

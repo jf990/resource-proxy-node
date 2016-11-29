@@ -1,0 +1,43 @@
+{
+    "name": "arcgis-resource-proxy",
+    "description": "ArcGIS Resource Proxy",
+    "version": "0.1.3",
+    "author": "Esri Runtime",
+    "contributors": [
+        "john foster <jfoster@esri.com>"
+    ],
+    "bugs": {
+        "url": "https://github.com/ArcGIS/arcgis-resource-proxy/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ArcGIS/arcgis-resource-proxy"
+    },
+    "homepage": "https://github.com/ArcGIS/arcgis-for-developers",
+    "keywords": [
+        "proxy",
+        "node",
+        "javascript",
+        "esri",
+        "arcgis",
+        "developers"
+    ],
+    "license": "Apache-2.0",
+    "main": "bin/proxy.js",
+    "private": false,
+    "dependencies": {
+        "bufferhelper": "latest",
+        "http-proxy": "latest",
+        "load-json-file": "^2.0.0",
+        "os": "latest",
+        "path.join": "latest",
+        "sqlite3": "latest",
+        "xml2js": "^0.4.17"
+    },
+    "devDependencies": {
+    },
+    "scripts": {
+        "start": "node bin/proxy.js",
+        "test": "node bin/test.js"
+    }
+}
