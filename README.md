@@ -22,7 +22,7 @@ npm install
   * Use a text editor to set up your proxy configuration settings.
   * Decide which port your server should run on (default is 3692).
   * Determine which URLs you are going to proxy.
-  * Review the full documentation for [proxy configuration settings](../README.md#proxy-configuration-settings).
+  * Review the full documentation for [proxy configuration settings](https://github.com/Esri/resource-proxy/README.md#proxy-configuration-settings).
 * Start the node server from a command line.
 
 ```
@@ -60,8 +60,8 @@ Once you deploy to an infrastructure on the public internet replace `localhost` 
 
 The proxy consists of the following files:
 * `package.json`: the node configuration.
-* `conf/config.json`: This file contains the [configuration settings for the proxy](../README.md#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
-* `conf/config.xml`: This file contains the [configuration settings for the proxy](../README.md#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
+* `conf/config.json`: This file contains the [configuration settings for the proxy](https://github.com/Esri/resource-proxy/README.md#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
+* `conf/config.xml`: This file contains the [configuration settings for the proxy](https://github.com/Esri/resource-proxy/README.md#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
 * `node_modules/`: after you run `npm install` this folder holds all the node dependencies.
 * `bin/`: folder containing the proxy runtime scripts
 
@@ -100,11 +100,11 @@ This is a sliding time window from the first request. Once the limit is reached 
 
 ## Issues
 
-Found a bug or want to request a new feature? Check out previously logged [Issues](https://github.com/Esri/resource-proxy/issues) and/or our [FAQ](FAQ.md).  If you don't see what you're looking for, feel free to submit a [new issue](https://github.com/Esri/resource-proxy/issues/new).
+Found a bug or want to request a new feature? Check out previously logged [Issues](https://github.com/Esri/resource-proxy/issues) and/or our [FAQ](https://github.com/Esri/resource-proxy/FAQ.md).  If you don't see what you're looking for, feel free to submit a [new issue](https://github.com/Esri/resource-proxy/issues/new).
 
 ## Contributing
 
-Esri welcomes [contributions](CONTRIBUTING.md) from anyone and everyone. Please see our [guidelines for contributing](https://github.com/esri/contributing).
+Esri welcomes contributions from anyone and everyone. Please see our [guidelines for contributing](https://github.com/esri/contributing).
 
 ## License
 
