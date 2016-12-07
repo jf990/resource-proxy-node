@@ -6,7 +6,7 @@ This is an implementation of an ArcGIS proxy server using node.js. While this se
 * Accessing resources secured with ArcGIS token based authentication.
 * [OAuth 2.0 app login](https://developers.arcgis.com/en/authentication).
 * Transaction logging.
-* Both resource and referrer based rate limiting.
+* Resource based rate limiting.
 
 ## Instructions
 
@@ -22,7 +22,7 @@ npm install
   * Use a text editor to set up your proxy configuration settings.
   * Decide which port your server should run on (default is 3692).
   * Determine which URLs you are going to proxy.
-  * Review the full documentation for [proxy configuration settings](https://github.com/Esri/resource-proxy/README.md#proxy-configuration-settings).
+  * Review the full documentation for [proxy configuration settings](https://github.com/Esri/resource-proxy/#proxy-configuration-settings).
 * Start the node server from a command line.
 
 ```
@@ -53,17 +53,17 @@ Once you deploy to an infrastructure on the public internet replace `localhost` 
 
 * node.js version 6.0 or higher (recommended.)
 * sudo access rights so you can install files, open a TCP/IP port.
-* file access read/write access for the log file and the sqlite database.
-* server administration and networking background to securely run your server.
+* File access read/write access for the log file and the sqlite database.
+* Server administration and networking background to securely run your server.
 
 ## Folders and Files
 
 The proxy consists of the following files:
 * `package.json`: the node configuration.
-* `conf/config.json`: This file contains the [configuration settings for the proxy](https://github.com/Esri/resource-proxy/README.md#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
-* `conf/config.xml`: This file contains the [configuration settings for the proxy](https://github.com/Esri/resource-proxy/README.md#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
+* `conf/config.json`: This file contains the [configuration settings for the proxy](https://github.com/Esri/resource-proxy/#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
+* `conf/config.xml`: This file contains the [configuration settings for the proxy](https://github.com/Esri/resource-proxy/#proxy-configuration-settings). This is where you define all the resources that are allowed to use the proxy.
 * `node_modules/`: after you run `npm install` this folder holds all the node dependencies.
-* `bin/`: folder containing the proxy runtime scripts
+* `bin/`: folder containing the proxy runtime scripts.
 
 ## Running your proxy server
 
@@ -100,7 +100,7 @@ This is a sliding time window from the first request. Once the limit is reached 
 
 ## Issues
 
-Found a bug or want to request a new feature? Check out previously logged [Issues](https://github.com/Esri/resource-proxy/issues) and/or our [FAQ](https://github.com/Esri/resource-proxy/FAQ.md).  If you don't see what you're looking for, feel free to submit a [new issue](https://github.com/Esri/resource-proxy/issues/new).
+Found a bug or want to request a new feature? Check out previously logged [Issues](https://github.com/Esri/resource-proxy/issues) and/or our [FAQ](https://github.com/Esri/resource-proxy/blob/master/FAQ.md).  If you don't see what you're looking for, feel free to submit a [new issue](https://github.com/Esri/resource-proxy/issues/new).
 
 ## Contributing
 
