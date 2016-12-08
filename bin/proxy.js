@@ -1040,6 +1040,10 @@ function startServer () {
                 errorProcessedRequests ++;
                 socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
             });
+            httpServer.on('error', function (error) {
+                errorProcessedRequests ++;
+                cannotListen(error);
+            });
             proxyServer = new httpProxy.createProxyServer(proxyServerOptions);
             proxyServer.on('error', proxyErrorHandler);
             proxyServer.on('proxyReq', proxyRequestRewrite);
@@ -1052,7 +1056,11 @@ function startServer () {
             }
 
             // Begin listening for client connections
-            httpServer.listen(configuration.port);
+            try {
+                httpServer.listen(configuration.port);
+            } catch (exception) {
+                cannotListen(exception);
+            }
         } else {
             QuickLogger.logErrorEvent("Proxy server was not created, probably a OS system or memory issue.");
         }
@@ -1067,6 +1075,15 @@ function startServer () {
  */
 function cannotStartServer(reason) {
     QuickLogger.logErrorEvent("!!! Server not started due to invalid configuration. " + reason.message);
+    process.exit();
+}
+
+/**
+ * Start up fails when listening on the socket fails with a reason message. We terminate the app.
+ * @param reason {Error} A message indicating why listen failed.
+ */
+function cannotListen(reason) {
+    QuickLogger.logErrorEvent("!!! Server not started due to " + reason.message);
     process.exit();
 }
 
