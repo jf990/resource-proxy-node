@@ -18,12 +18,13 @@ npm install
 ```
 
 * Edit the proxy configuration file:
-  * Choose either one of (conf/config.json or conf/config.xml) configuration format.
+  * Choose either one of (conf/config.json or conf/config.xml, but not both) configuration format.
   * Use a text editor to set up your proxy configuration settings.
   * Decide which port your server should run on (default is 3692).
-  * Determine which URLs you are going to proxy.
+  * Determine which URLs you are going to proxy by editing the `serverUrls` section.
+  * Set your allowedReferrers. While "*" may be ok for testing we highly recommend whitelisting referrers in production.
   * Review the full documentation for [proxy configuration settings](https://github.com/Esri/resource-proxy/#proxy-configuration-settings).
-* Start the node server from a command line.
+* Start the node server from a command line:
 
 ```
 npm start

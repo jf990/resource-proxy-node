@@ -1,5 +1,6 @@
 {
     "ProxyConfig": {
+        "language": "en",
         "port": 3692,
         "useHTTPS": false,
         "mustMatch": true,
@@ -12,7 +13,7 @@
         "statusPath": "/status",
         "allowedReferrers": "*"
     },
-    "ServerUrls": [
+    "serverUrls": [
         {
             "url": "http://services.arcgisonline.com",
             "test": "http://localhost:3333/proxy/http/services.arcgisonline.com",
@@ -33,8 +34,8 @@
             "matchAll": true
         },
         {
-            "url": "demo.arcgis.com/ArcGIS/",
-            "test": "http://localhost:3333/proxy/demo.arcgis.com/ArcGIS/",
+            "url": "demo.arcgis.com/arcgis/",
+            "test": "http://localhost:3333/proxy/demo.arcgis.com/arcgis/",
             "hostRedirect": "http://services.arcgisonline.com/ArcGIS/rest/info/",
             "rateLimit": "120",
             "rateLimitPeriod": "1",

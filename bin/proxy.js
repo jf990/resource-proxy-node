@@ -17,9 +17,10 @@
  * * GET making sure all the query parameters are correct
  * * POST
  * * FILES
+ * * Clean config files of test data
  */
 
-const proxyVersion = "0.1.3";
+const proxyVersion = "0.1.4";
 const http = require('http');
 const https = require('https');
 const httpProxy = require('http-proxy');
@@ -34,8 +35,9 @@ const QuickLogger = require('./QuickLogger');
 const UrlFlexParser = require('./UrlFlexParser');
 const Configuration = require('./Configuration');
 
-
-const defaultOAuthEndPoint = 'https://www.arcgis.com/sharing/oauth2/';
+const defaultOAuthHost = 'https://www.arcgis.com';
+const defaultOAuthEndPoint = '/sharing/oauth2/';
+const defaultTokenEndPoint = '/sharing/generateToken/';
 
 var configuration = Configuration.configuration;
 var httpServer;
@@ -179,13 +181,13 @@ function getTokenEndpointFromURL(url) {
                     if (tokenServiceUri == null) {
                         // If no tokenServicesUrl, try to find owningSystemUrl as token endpoint
                         if (authInfo.owningSystemUrl !== undefined) {
-                            tokenServiceUri = authInfo.owningSystemUrl + '/sharing/generateToken';
+                            tokenServiceUri = authInfo.owningSystemUrl + defaultTokenEndPoint;
                         }
                     }
                     if (tokenServiceUri != null) {
                         resolvePromise(tokenServiceUri);
                     } else {
-                        rejectPromise(new Error('Unable to transform ' + url + ' or ' + tokenUrl + ' into a token endpoint URL.'));
+                        rejectPromise(new Error(Configuration.getStringTableEntry('Unable to transform to token endpoint', {url: url, tokenUrl: tokenUrl})));
                     }
                 },
                 function (serverError) {
@@ -193,7 +195,7 @@ function getTokenEndpointFromURL(url) {
                 }
             );
         } else {
-            rejectPromise(new Error('Unable to transform ' + url + ' or ' + tokenUrl + ' into a usable URL.'));
+            rejectPromise(new Error(Configuration.getStringTableEntry('Unable to transform to usable URL', {url: url, tokenUrl: tokenUrl})));
         }
     });
 }
@@ -241,21 +243,21 @@ function getNewTokenFromUserNamePasswordLogin(referrer, serverUrlInfo) {
                 }
             );
         } else {
-            rejectPromise(new Error('Both username and password must be set to enable user login.'));
+            rejectPromise(new Error(Configuration.getStringTableEntry('Username and password must be set', null)));
         }
     });
 }
 
 /**
  * OAuth 2.0 mode authentication "App Login" - authenticating using oauth2Endpoint, clientId, and clientSecret specified
- * in configuration. Because this is an http request (or several) it is Promise based. The token is passed to the
+ * in configuration. Because this is an http request (or several) it is promise based. The token is passed to the
  * promise resolve function or an error is passed to the promise reject function.
  * @param serverURLInfo
  * @param requestUrl
  * @return {Promise}
  */
 function performAppLogin(serverURLInfo) {
-    QuickLogger.logInfoEvent("Service is secured by " + serverURLInfo.oauth2Endpoint + ": getting new token...");
+    QuickLogger.logInfoEvent(Configuration.getStringTableEntry('Service is secured by', {oauth2Endpoint: serverURLInfo.oauth2Endpoint}));
     var tokenRequestPromise = new Promise(function(resolvePromise, rejectPromise) {
         var oauth2Endpoint = serverURLInfo.oauth2Endpoint + 'token',
             parameters = {
@@ -273,7 +275,7 @@ function performAppLogin(serverURLInfo) {
                 if (tokenResponse.length > 0) {
                     exchangePortalTokenForServerToken(tokenResponse, serverURLInfo).then(resolvePromise, rejectPromise);
                 } else {
-                    rejectPromise(new Error('App login could not get a token from the server response of ' + serverResponse));
+                    rejectPromise(new Error(Configuration.getStringTableEntry('App login could not get a token', {response: serverResponse})));
                 }
             },
             function(error) {
@@ -289,7 +291,7 @@ function performUserLogin(serverURLInfo, requestUrl) {
     var requestUrlParts = UrlFlexParser.parseAndFixURLParts(requestUrl),
         tokenResponse;
 
-    QuickLogger.logInfoEvent("Service requires user login.");
+    QuickLogger.logInfoEvent(Configuration.getStringTableEntry('Service requires user login', null));
     var tokenRequestPromise = new Promise(function(resolvePromise, rejectPromise) {
         // if a request is already being made to generate a token, just let it go. TODO: Where is username/password???
         if (requestUrlParts.pathname.toLowerCase().indexOf('/generatetoken') >= 0) {
@@ -299,7 +301,7 @@ function performUserLogin(serverURLInfo, requestUrl) {
                     if (tokenResponse.length > 0) {
                         resolvePromise(tokenResponse);
                     } else {
-                        rejectPromise(new Error('User login could not get a token from the server response of ' + serverResponse));
+                        rejectPromise(new Error(Configuration.getStringTableEntry('User login could not get a token', {response: serverResponse})));
                     }
                 },
                 function(error) {
@@ -313,12 +315,20 @@ function performUserLogin(serverURLInfo, requestUrl) {
     return tokenRequestPromise;
 }
 
+/**
+ * If the serverURLInfo specifies credentials to allow login, then attempt to login and authenticate with the service.
+ * @param serverURLInfo {object} the server URL we are conversing with.
+ * @param requestUrl {string} URL to the login service.
+ * @returns {Promise} Resolves with the new token, or rejects with an error.
+ */
 function getNewTokenIfCredentialsAreSpecified(serverURLInfo, requestUrl) {
     return new Promise(function(resolvePromise, rejectPromise) {
         if (serverURLInfo.isAppLogin) {
             performAppLogin(serverURLInfo).then(resolvePromise, rejectPromise);
         } else if (serverURLInfo.isUserLogin) {
             performUserLogin(serverURLInfo, requestUrl).then(resolvePromise, rejectPromise);
+        } else {
+            rejectPromise(new Error(Configuration.getStringTableEntry('No method to authenticate', {url: serverURLInfo.url})));
         }
     });
 }
@@ -348,7 +358,7 @@ function exchangePortalTokenForServerToken(portalToken, serverURLInfo) {
                 if (tokenResponse.length > 0) {
                     resolvePromise(tokenResponse);
                 } else {
-                    rejectPromise(new Error('Error could not get a token from the server response of ' + serverResponse));
+                    rejectPromise(new Error(Configuration.getStringTableEntry('Could not get a token from server response', {response: serverResponse})));
                 }
             },
             function(error) {
@@ -441,7 +451,6 @@ function processValidatedRequest (urlRequestedParts, serverURLInfo, referrer, re
         statusMessage,
         proxyRequest,
         parsedHostRedirect,
-        parsedProxy,
         hostname,
         contentType,
         parameters;
@@ -458,18 +467,33 @@ function processValidatedRequest (urlRequestedParts, serverURLInfo, referrer, re
                 serverURLInfo.firstRequest = serverURLInfo.lastRequest;
             }
             serverURLInfo.totalRequests ++;
+
+            // Combine query parameters of the current request with the configuration. The current request has priority.
+            // TODO: Test different combinations of parameters
+            // request.query="?token=1234512345&f=json&status=1"
+            // urlRequestedParts.query="?token=1234512345&f=json&status=1"
+            // serverURLInfo.query="?token=1234512345&f=json&status=1"
+            parameters = UrlFlexParser.combineParameters(request, urlRequestedParts, serverURLInfo);
+            // if no token was provided in the request but one is in the configuration then use the configured token.
+            if (ProjectUtilities.isPropertySet(serverURLInfo, 'accessToken')) {
+                ProjectUtilities.addIfPropertyNotSet(parameters, 'token', serverURLInfo.accessToken);
+            } else if (ProjectUtilities.isPropertySet(serverURLInfo, 'token')) {
+                ProjectUtilities.addIfPropertyNotSet(parameters, 'token', serverURLInfo.token);
+            }
+            // TODO: Test if parameters is empty
+            urlRequestedParts.query = ProjectUtilities.objectToQueryString(parameters);
+
+            // TODO: Combine GET parameters of request with config?
+
             if (serverURLInfo.isHostRedirect) {
-                // Host Redirect means we want to replace the host used in the request with a different host, but keep
-                // everything else received in the request (path, query).
+                // Host Redirect means we want to replace the host and path used in the request with the configured URL,
+                // then replace everything else received in the request (query, auth).
                 parsedHostRedirect = serverURLInfo.parsedHostRedirect;
-                parsedProxy = UrlFlexParser.parseAndFixURLParts(urlRequestedParts.proxyPath);
-                parsedProxy.hostname = parsedHostRedirect.hostname;
-                parsedProxy.protocol = UrlFlexParser.getBestMatchProtocol(referrer, parsedProxy, parsedHostRedirect);
-                parsedProxy.port = UrlFlexParser.getBestMatchPort(referrer, parsedProxy, parsedHostRedirect);
-                proxyRequest = UrlFlexParser.buildFullURLFromParts(parsedProxy);
-                hostname = parsedProxy.hostname;
+                hostname = parsedHostRedirect.hostname;
+                proxyRequest = UrlFlexParser.buildFullURLFromParts(parsedHostRedirect);
             } else {
                 hostname = serverURLInfo.hostname;
+                proxyRequest = UrlFlexParser.buildURLFromReferrerRequestAndInfo(referrer, urlRequestedParts, serverURLInfo);
             }
 
             // TODO: Combine parameters of the two requests, current request parameters override configured parameters
@@ -485,21 +509,6 @@ function processValidatedRequest (urlRequestedParts, serverURLInfo, referrer, re
 
                 }
             }
-            // Combine query parameters of the current request with the configuration. The current request has priority.
-            // TODO: Test different combinations of parameters
-            // request.query="?token=1234512345&f=json&status=1"
-            // urlRequestedParts.query="?token=1234512345&f=json&status=1"
-            // serverURLInfo.query="?token=1234512345&f=json&status=1"
-            parameters = UrlFlexParser.combineParameters(request, urlRequestedParts, serverURLInfo);
-            // if no token was provided in the request but one is in the configuration then use the configured token.
-            if (ProjectUtilities.isPropertySet(serverURLInfo, 'accessToken')) {
-                ProjectUtilities.addIfPropertyNotSet(parameters, 'token', serverURLInfo.accessToken);
-            } else if (ProjectUtilities.isPropertySet(serverURLInfo, 'token')) {
-                ProjectUtilities.addIfPropertyNotSet(parameters, 'token', serverURLInfo.token);
-            }
-            // TODO: Test if parameters is empty
-            urlRequestedParts.query = ProjectUtilities.objectToQueryString(parameters);
-            proxyRequest = UrlFlexParser.buildURLFromReferrerRequestAndInfo(referrer, urlRequestedParts, serverURLInfo);
             // Fix the request to transform it from our proxy server into a spoof of the matching request against the
             // proxied service
             request.url = proxyRequest;
@@ -512,21 +521,21 @@ function processValidatedRequest (urlRequestedParts, serverURLInfo, referrer, re
 
             // TODO: Not really sure this worked if the proxy generates an error as we are not catching any error from the proxied service
             validProcessedRequests ++;
-            QuickLogger.logInfoEvent("==> Issuing proxy request [" + request.method + "](" + request.url + ") for " + proxyRequest);
+            QuickLogger.logInfoEvent("==> Issuing proxy request [" + request.method + "]" + request.url + " for " + proxyRequest);
             proxyServer.web(request, response, {
                 target: proxyRequest,
                 ignorePath: true
             }, proxyResponseError);
         } else {
             statusCode = 500;
-            statusMessage = "Internal error: proxy server is not operating.";
+            statusMessage = Configuration.getStringTableEntry('Internal error', null);
             sendErrorResponse(urlRequestedParts.proxyPath, response, statusCode, statusMessage);
         }
     } else {
         statusCode = 403;
-        statusMessage = "Request from " + referrer + ", proxy has not been set up for " + urlRequestedParts.listenPath + ".";
+        statusMessage = Configuration.getStringTableEntry('Proxy has not been set up for', {referrer: referrer, path: urlRequestedParts.listenPath});
         if (QuickLogger.ifLogLevelGreaterOrEqual('INFO')) {
-            statusMessage += " Make sure there is a serverUrl in the configuration file that matches " + urlRequestedParts.listenPath;
+            statusMessage += Configuration.getStringTableEntry('Proxy has not been set up for extra', {path: urlRequestedParts.listenPath});
         }
         sendErrorResponse(urlRequestedParts.proxyPath, response, statusCode, statusMessage);
     }
@@ -598,9 +607,9 @@ function sendStatusResponse (referrer, response) {
             });
         }
     } catch (exception) {
-        sendErrorResponse('status', response, 500, 'System error processing request: ' + exception.toLocaleString());
+        sendErrorResponse('status', response, 500, Configuration.getStringTableEntry('System error processing request', {message: exception.toLocaleString()}));
     }
-    QuickLogger.logInfoEvent("Status request from " + referrer);
+    QuickLogger.logInfoEvent(Configuration.getStringTableEntry('Status request from', {referrer: referrer}));
 }
 
 /**
@@ -619,7 +628,7 @@ function reportHTMLStatusResponse (responseObject, response) {
         i,
         statusCode = 200;
 
-    responseBody = '<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n<title>Resource Proxy Status</title>\n</head>\n<body>\n\n<h1>Resource Proxy Status</h1>';
+    responseBody = '<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n<title>' + Configuration.getStringTableEntry('Resource Proxy Status title', null) + '</title>\n</head>\n<body>\n\n<h1>' + Configuration.getStringTableEntry('Resource Proxy Status title', null) + '</h1>';
     for (key in responseObject) {
         if (responseObject.hasOwnProperty(key)) {
             value = responseObject[key];
@@ -640,7 +649,7 @@ function reportHTMLStatusResponse (responseObject, response) {
                     responseBody += '</tr>' + tableRow;
                 }
                 if (value.length == 0) {
-                    responseBody += '<tr><td>** empty **</td>';
+                    responseBody += '<tr><td>' + Configuration.getStringTableEntry('Empty row', null) + '</td>';
                 }
                 responseBody += '</tr></table>'
             } else {
@@ -692,7 +701,7 @@ function sendErrorResponse (urlRequested, response, errorCode, errorMessage) {
     };
     sendJSONResponse(response, errorCode, responseBody);
     errorProcessedRequests ++;
-    QuickLogger.logErrorEvent("Request error: " + errorMessage + " (" + errorCode + ") for " + urlRequested);
+    QuickLogger.logErrorEvent(Configuration.getStringTableEntry('Request error with info', {error: errorMessage, code: errorCode, url: urlRequested}));
 }
 
 /**
@@ -715,13 +724,13 @@ function checkRateMeterThenProcessValidatedRequest(referrer, requestParts, serve
                 processValidatedRequest(requestParts, serverURLInfo, referrer, request, response);
             } else {
                 statusCode = 429; // TODO: or is it 402? or 420?
-                QuickLogger.logWarnEvent("RateMeter dissallowing access to " + serverURLInfo.url + " from " + referrer);
-                sendErrorResponse(request.url, response, statusCode, 'This is a metered resource, number of requests have exceeded the rate limit interval.');
+                QuickLogger.logWarnEvent(Configuration.getStringTableEntry('RateMeter dissallowing access to', {url: serverURLInfo.url, referrer: referrer}));
+                sendErrorResponse(request.url, response, statusCode, Configuration.getStringTableEntry('Metered requests exceeded', null));
             }
         }, function (error) {
             statusCode = 420;
-            QuickLogger.logErrorEvent("RateMeter failed on " + serverURLInfo.url + " from " + referrer + ": " + error.toString());
-            sendErrorResponse(request.url, response, statusCode, 'This is a metered resource but the server failed to determine the meter status of this resource.');
+            QuickLogger.logErrorEvent(Configuration.getStringTableEntry('RateMeter failed on', {url: serverURLInfo.url, referrer: referrer, error: error.toString()}));
+            sendErrorResponse(request.url, response, statusCode, Configuration.getStringTableEntry('Metered resource status failed', null));
         });
     } else {
         statusCode = 500;
@@ -748,7 +757,7 @@ function processRequest(request, response) {
         } else {
             referrer = referrer.toLowerCase().trim();
         }
-        QuickLogger.logInfoEvent('---- New request from ' + referrer + ' for ' + requestParts.listenPath + ' ----');
+        QuickLogger.logInfoEvent(Configuration.getStringTableEntry('New request from', {referrer: referrer, path: requestParts.listenPath}));
         if (requestParts.listenPath == configuration.localPingURL) {
             sendPingResponse(referrer, response);
         } else {
@@ -781,7 +790,7 @@ function processRequest(request, response) {
                             };
                             processValidatedRequest(requestParts, serverURLInfo, referrer, request, response);
                         } else {
-                            sendErrorResponse(request.url, response, 404, 'Resource ' + request.url + ' not found.');
+                            sendErrorResponse(request.url, response, 404, Configuration.getStringTableEntry('Resource not found', {url: request.url}));
                         }
                     } else {
                         // try to serve a static resource. proxyServeFile will always send its own response.
@@ -789,11 +798,11 @@ function processRequest(request, response) {
                     }
                 }
             } else {
-                sendErrorResponse(request.url, response, 403, 'referrer ' + referrer + ' not allowed.');
+                sendErrorResponse(request.url, response, 403, Configuration.getStringTableEntry('Referrer not allowed', {referrer: referrer}));
             }
         }
     } else {
-        sendErrorResponse(request.url, response, 403, 'Invalid request: could not parse request as a valid request.');
+        sendErrorResponse(request.url, response, 403, Configuration.getStringTableEntry('Invalid request 403', null));
     }
 }
 
@@ -805,8 +814,8 @@ function proxyResponseError(error, proxyRequest, proxyResponse, proxyTarget) {
     if (proxyResponse.status === undefined) {
         proxyResponse.status = 502;
     }
-    QuickLogger.logErrorEvent('proxyResponseError caught error ' + error.code + ': ' + error.description + ' on ' + proxyTarget + ' status=' + proxyResponse.status);
-    sendErrorResponse(proxyRequest.url, proxyResponse, proxyResponse.status, 'Proxy request error: ' + error.code + ': ' + error.description);
+    QuickLogger.logErrorEvent(Configuration.getStringTableEntry('proxyResponseError caught error', {code: error.code, description: error.description, target: proxyTarget, status: proxyResponse.status}));
+    sendErrorResponse(proxyRequest.url, proxyResponse, proxyResponse.status, Configuration.getStringTableEntry('Proxy request error', {code: error.code, description: error.description}));
 }
 
 /**
@@ -815,18 +824,19 @@ function proxyResponseError(error, proxyRequest, proxyResponse, proxyTarget) {
  * @param proxyError
  */
 function proxyErrorHandler(proxyError, proxyRequest, proxyResponse) {
-    sendErrorResponse(proxyRequest.url, proxyResponse, 500, 'Proxy error ' + proxyError.toString());
+    sendErrorResponse(proxyRequest.url, proxyResponse, 500, Configuration.getStringTableEntry('Proxy error 500', {error: proxyError.toString()}));
 }
 
 /**
- * The proxy service gives us a chance to alter the request before forwarding it to the proxied server.
+ * The proxy service gives us a chance to alter the request before forwarding it to the proxied server. This is a place
+ * where we could rewrite any inbound parameters and check any tokens, or add tokens to the proxied request.
  * @param proxyReq
  * @param proxyRequest
  * @param proxyResponse
  * @param options
  */
 function proxyRequestRewrite(proxyReq, proxyRequest, proxyResponse, options) {
-    QuickLogger.logInfoEvent("proxyRequestRewrite opportunity to alter request before contacting service.");
+    QuickLogger.logInfoEvent(Configuration.getStringTableEntry('proxyRequestRewrite alter request before service', null));
 }
 
 /**
@@ -894,7 +904,7 @@ function proxyServeFile(request, response) {
 
         if (action == '/') {
             responseStatus = 404;
-            responseMessage = 'Resource not found.';
+            responseMessage = Configuration.getStringTableEntry('Resource not found', {url: action});
         } else {
             // serve our static assets from the local ../assets folder. TODO: consider making this a configuration setting.
             var filePath = path.join(path.dirname(__dirname), 'assets', action).split('%20').join(' '),
@@ -903,7 +913,7 @@ function proxyServeFile(request, response) {
             // from this point we are running asynchronous so inside this function we must fully handle responses
             fileDomain.on('error', function(fileError) {
                 responseStatus = 403;
-                sendErrorResponse(request.url, response, responseStatus, 'Resource not accessible.');
+                sendErrorResponse(request.url, response, responseStatus, Configuration.getStringTableEntry('Resource not accessible', null));
             });
             fileDomain.run(function() {
                 fs.stat(filePath, function (fileError, fileStat) {
@@ -941,7 +951,7 @@ function proxyServeFile(request, response) {
                         }
                     } else {
                         responseStatus = 404;
-                        sendErrorResponse(request.url, response, responseStatus, 'Resource not found.');
+                        sendErrorResponse(request.url, response, responseStatus, Configuration.getStringTableEntry('Resource not found', {url: request.url}));
                     }
                 });
             });
@@ -972,19 +982,22 @@ function checkServerResponseForMissingToken(proxyResponse, contentType, function
         // TODO: I really don't like this. We are going to parse the entire response to see if we receive the specific error we
         // are looking for. if it is an error this is pretty small, but if its not an error we could be parsing a rather monstrous amount of json! only to convert it back to string!
         // Maybe better to regex match '{"error":{"code":500' => '\"error\":[\s]*{[\s]*\"code\":[\s]*[\d]*'
-        var body;
+        var body = '';
         try {
-            body = JSON.parse(buffer.toBuffer().toString());
-            if (body == null) {
-                body = buffer.toBuffer().toString();
-            } else {
-                tokenIsMissing = functionThatChecksForMissingToken(body);
-                // Converts the JSON back to buffer.
-                body = new BufferHelper(JSON.stringify(body));
+            body = buffer.toBuffer().toString();
+            if (body != null && body.length > 0) {
+                body = JSON.parse(buffer.toBuffer().toString());
+                if (body == null) {
+                    body = buffer.toBuffer().toString();
+                } else {
+                    tokenIsMissing = functionThatChecksForMissingToken(body);
+                    // Converts the JSON back to buffer.
+                    body = new BufferHelper(JSON.stringify(body));
+                }
             }
         } catch (e) {
             console.log('JSON.parse error:', e);
-            body = buffer.toBuffer().toString();
+            console.log('JSON.parse error from: ' + body);
         }
         if ( ! tokenIsMissing) {
             // Call the response method
@@ -992,7 +1005,7 @@ function checkServerResponseForMissingToken(proxyResponse, contentType, function
             responseEnd.call(proxyResponse);
         } else {
             // TODO: discard this response. get a new token from the token generator. retry the request with the new token. Send back the new response instead.
-            reponseWrite.call(proxyResponse, 'We could not generate a new token for you.');
+            reponseWrite.call(proxyResponse, Configuration.getStringTableEntry('Could not generate a new token', null));
             responseEnd.call(proxyResponse);
         }
     };
@@ -1029,7 +1042,7 @@ function startServer () {
                     cert: fs.readFileSync(configuration.httpsCertificateFile)
                 };
             } else {
-                QuickLogger.logErrorEvent("HTTPS proxy was requested but the necessary files [httpsPfxFile or httpsKeyFile, httpsCertificateFile] were not defined in configuration.");
+                QuickLogger.logErrorEvent(Configuration.getStringTableEntry('Missing HTTPS proxy configuration', null));
             }
             httpServer = https.createServer(httpsOptions, processRequest);
         } else {
@@ -1053,6 +1066,8 @@ function startServer () {
             // Integration tests require a fully parsed configuration and a started server, so they were delayed until this point.
             if (waitingToRunIntegrationTests) {
                 __runIntegrationTests();
+                QuickLogger.logInfoEvent(Configuration.getStringTableEntry('Integration tests complete startServer', null));
+                process.exit();
             }
 
             // Begin listening for client connections
@@ -1062,10 +1077,10 @@ function startServer () {
                 cannotListen(exception);
             }
         } else {
-            QuickLogger.logErrorEvent("Proxy server was not created, probably a OS system or memory issue.");
+            QuickLogger.logErrorEvent(Configuration.getStringTableEntry('Proxy server not created', null));
         }
     } catch (exception) {
-        QuickLogger.logErrorEvent("Proxy server encountered an exception and is not able to start: " + exception.toLocaleString());
+        QuickLogger.logErrorEvent(Configuration.getStringTableEntry('Proxy server startup exception', {exception: exception.toLocaleString()}));
     }
 }
 
@@ -1074,7 +1089,7 @@ function startServer () {
  * @param reason {Error} A message indicating why the configuration failed.
  */
 function cannotStartServer(reason) {
-    QuickLogger.logErrorEvent("!!! Server not started due to invalid configuration. " + reason.message);
+    QuickLogger.logErrorEvent(Configuration.getStringTableEntry('Server not started invalid config', {reason: reason.message}));
     process.exit();
 }
 
@@ -1083,7 +1098,7 @@ function cannotStartServer(reason) {
  * @param reason {Error} A message indicating why listen failed.
  */
 function cannotListen(reason) {
-    QuickLogger.logErrorEvent("!!! Server not started due to " + reason.message);
+    QuickLogger.logErrorEvent(Configuration.getStringTableEntry('Server not started due to', {reason: reason.message}));
     process.exit();
 }
 
@@ -1093,7 +1108,7 @@ function cannotListen(reason) {
  * @param error
  */
 function exitHandler (options, error) {
-    QuickLogger.logEventImmediately(QuickLogger.LOGLEVEL.INFO.value, 'Stopping server via ' + options.reason);
+    QuickLogger.logEventImmediately(QuickLogger.LOGLEVEL.INFO.value, Configuration.getStringTableEntry('Stopping server via', {reason: options.reason}));
     if (rateMeter != null) {
         rateMeter.stop();
         rateMeter = null;
@@ -1130,19 +1145,28 @@ function configProcessHandlers(process) {
 function runIntegrationTests() {
     if (configurationComplete) {
         __runIntegrationTests();
+        QuickLogger.logInfoEvent(Configuration.getStringTableEntry('Integration tests complete runIntegrationTests', null));
+        process.exit();
     } else {
         waitingToRunIntegrationTests = true;
     }
 }
 
 function __runIntegrationTests() {
-    var testStr;
-    var targetStr;
-    var result;
+    var testStr,
+        targetStr,
+        result,
+        serverUrlInfo,
+        urlParts,
+        token;
 
     waitingToRunIntegrationTests = false;
-
     console.log("TTTTT Starting ProxyJS integration tests ");
+
+    targetStr = 'Loading configuration from';
+    testStr = 'this is a test file name';
+    result = Configuration.getStringTableEntry(targetStr, testStr);
+    QuickLogger.logInfoEvent('getStringTableEntry result=' + result);
 
     QuickLogger.logInfoEvent('This is an Info level event');
     QuickLogger.logWarnEvent('This is a Warning level event');
@@ -1221,7 +1245,6 @@ function __runIntegrationTests() {
     targetStr = UrlFlexParser.validatedReferrerFromReferrer(testStr, configuration.allowedReferrers);
     console.log('validatedReferrerFromReferrer referrer=' + testStr + ' result=' + targetStr);
 
-
     httpRequestPromiseResponse("www.enginesis.com", "/index.php", "POST", false, {fn: "ESRBTypeList", site_id: 100, response: "json", user_id: 9999}).then(function(responseBody) {
         result = responseBody;
         console.log('httpRequestPromiseResponse POST ' + result);
@@ -1236,9 +1259,6 @@ function __runIntegrationTests() {
         console.log('httpRequestPromiseResponse GET error ' + error.message);
     });
 
-
-    var serverUrlInfo;
-    var urlParts;
     testStr = '/proxy/http://route.arcgis.com/arcgis/rest/services/World/ClosestFacility/NAServer/ClosestFacility_World/solveClosestFacility';
     urlParts = UrlFlexParser.parseURLRequest(testStr, configuration.listenURI);
     serverUrlInfo = getServerUrlInfo(urlParts);
@@ -1252,8 +1272,10 @@ function __runIntegrationTests() {
     );
 
     testStr = 'http://developers.arcgis.com';
+    token = null;
     getNewTokenFromUserNamePasswordLogin(testStr, serverUrlInfo).then(
-        function(token) {
+        function(tokenResponse) {
+            token = tokenResponse;
             console.log('getNewTokenFromUserNamePasswordLogin got ' + token);
         },
         function(error) {
@@ -1261,17 +1283,33 @@ function __runIntegrationTests() {
         }
     );
 
-    // exchangePortalTokenForServerToken(portalToken, serverURLInfo);
+    if (token !== null) {
+        exchangePortalTokenForServerToken(token, serverURLInfo).then(
+            function (tokenResponse) {
+                token = tokenResponse;
+                console.log('exchangePortalTokenForServerToken got ' + token);
+            },
+            function (error) {
+                console.log('exchangePortalTokenForServerToken fails with ' + error.message);
+            }
+        );
+    } else {
+        console.log('exchangePortalTokenForServerToken test not run because we do not have a short-lived token to test with');
+    }
 
     // getNewTokenIfCredentialsAreSpecified(serverURLInfo, requestUrl);
-
+    // userLogin succeeds
+    // userLogin fails
+    // appLogin succeeds
+    // appLogin fails
+    // serverURLInfo does not specify credentials (error test)
 
     console.log("TTTTT Completed ProxyJS integration tests ");
 }
 
 function loadConfigThenStart() {
     configProcessHandlers(process);
-    Configuration.loadConfigurationFile().then(startServer, cannotStartServer);
+    Configuration.loadConfigurationFile('').then(startServer, cannotStartServer);
 }
 
 exports.ArcGISProxyIntegrationTest = runIntegrationTests;

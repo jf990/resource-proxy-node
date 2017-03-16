@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ProxyConfig allowedReferers="*"
+             language="en"
              logFile="arcgis-proxy-node.log"
              logFilePath="./"
              logLevel="ALL"
@@ -15,17 +16,17 @@
                    test="http://localhost:3333/proxy/http://services.arcgisonline.com"
                    matchAll="true"/>
         <serverUrl url="http://geoenrich.arcgis.com/arcgis/rest/services/World/GeoenrichmentServer/Geoenrichment/enrich?f=json&amp;studyAreas=[{%27geometry%27:{%27x%27:-117.1956,%27y%27:34.0572}}]&amp;token=N_YzjLgydmmH7VmYvcpdbqLkZJjBt0-8PSTcBoBluuzvF7G5cK_SMuzt9Hr6uyhoNgMvecr1YS7RuVMH8ictfv5HslAs06g5uM61LZ6x0jy2-lWr7dzdlSmJwExH-b-tbf3xerW-9pqsvAgFx1lp9w.."
-                   test="http://localhost:3333/proxy/http://geoenrich.arcgis.com/arcgis/rest/services/World/GeoenrichmentServer/Geoenrichment/enrich?f=json&amp;studyAreas=[{%27geometry%27:{%27x%27:-117.1956,%27y%27:34.0572}}]&amp;token=N_YzjLgydmmH7VmYvcpdbqLkZJjBt0-8PSTcBoBluuzvF7G5cK_SMuzt9Hr6uyhoNgMvecr1YS7RuVMH8ictfv5HslAs06g5uM61LZ6x0jy2-lWr7dzdlSmJwExH-b-tbf3xerW-9pqsvAgFx1lp9w.."
+                   test="http://localhost:3692/proxy/http://geoenrich.arcgis.com/arcgis/rest/services/World/GeoenrichmentServer/Geoenrichment/enrich?f=json&amp;studyAreas=[{%27geometry%27:{%27x%27:-117.1956,%27y%27:34.0572}}]&amp;token=N_YzjLgydmmH7VmYvcpdbqLkZJjBt0-8PSTcBoBluuzvF7G5cK_SMuzt9Hr6uyhoNgMvecr1YS7RuVMH8ictfv5HslAs06g5uM61LZ6x0jy2-lWr7dzdlSmJwExH-b-tbf3xerW-9pqsvAgFx1lp9w.."
                    matchAll="false"/>
         <serverUrl url="http://sampleserver6.arcgisonline.com"
-                   test="http://localhost:3333/proxy/http://sampleserver6.arcgisonline.com"
+                   test="http://localhost:3692/proxy/http://sampleserver6.arcgisonline.com"
                    username="username"
                    password="password"
                    rateLimit="120"
                    rateLimitPeriod="60"
                    matchAll="true" />
-        <serverUrl url="demo.arcgis.com/ArcGIS/"
-                   test="http://localhost:3333/proxy/demo.arcgis.com/ArcGIS/"
+        <serverUrl url="demo.arcgis.com/arcgis/"
+                   test="http://localhost:3692/proxy/demo.arcgis.com/arcgis/"
                    hostRedirect="http://services.arcgisonline.com/ArcGIS/rest/info/"
                    rateLimit="120"
                    rateLimitPeriod="1"

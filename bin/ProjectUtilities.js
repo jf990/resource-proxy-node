@@ -233,6 +233,26 @@ module.exports.findNumberAfterTokenInString = function(source, token) {
 };
 
 /**
+ * Replace occurrences of {token} with matching keyed values from parameters array.
+ *
+ * @param {string} text text containing tokens to be replaced. Tokens are surrounded with {}.
+ * @param {Array} parameters array/object of key/value pairs to match keys as tokens in text and replace with value.
+ * @return {string} text replaced string.
+ */
+module.exports.tokenReplace = function (text, parameters) {
+    var token,
+        regexMatch;
+
+    for (token in parameters) {
+        if (parameters.hasOwnProperty(token)) {
+            regexMatch = new RegExp("\{" + token + "\}", 'g');
+            text = text.replace(regexMatch, parameters[token]);
+        }
+    }
+    return text;
+};
+
+/**
  * Return true if the file name appears to be a json file type (because it ends with .json).
  * @param fileName
  * @returns {boolean}

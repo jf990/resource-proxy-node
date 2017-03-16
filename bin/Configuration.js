@@ -13,12 +13,13 @@ const QuickLogger = require('./QuickLogger');
 const UrlFlexParser = require('./UrlFlexParser');
 const xml2js = require('xml2js');
 
-const defaultConfigurationFilePath = 'conf';
+const defaultConfigurationFilePath = '../conf';
 const defaultConfigurationFileName = 'config';
 const defaultConfigurationFileType = 'xml';
 const defaultOAuthEndpoint = 'https://www.arcgis.com/sharing/oauth2/';
 
 var configuration = {
+    language: 'en',
     mustMatch: true,
     logLevel: QuickLogger.LOGLEVEL.ERROR.value,
     logConsole: true,
@@ -33,7 +34,8 @@ var configuration = {
     listenURI: null,
     allowedReferrers: ['*'],
     allowAnyReferrer: false,
-    serverURLs: []
+    serverURLs: [],
+    stringTable: null
 };
 var configurationComplete = false;
 
@@ -66,6 +68,26 @@ function isAppLogin (serverURLInfo) {
 }
 
 /**
+ * Return an entry in the language translation strings table, and replace any tokens in that string from a key/value object.
+ * Each target key in the string is identified with {key} and matched to an entry in the tokens object then replaced with its value.
+ *
+ * @param key {string} The key to look up in the string table.
+ * @param tokens {object} key/value for token replacement in the string.
+ * @returns {string} If the key is not found in the string table then the key is returned.
+ */
+function getStringTableEntry(key, tokens) {
+    if (configuration.stringTable == null) {
+        return key;
+    } else if (configuration.stringTable[key] === undefined) {
+        return key;
+    } else if (tokens === undefined || tokens == null) {
+        return configuration.stringTable[key];
+    } else {
+        return ProjectUtilities.tokenReplace(configuration.stringTable[key], tokens);
+    }
+}
+
+/**
  * Determine if the configuration is valid enough to start the server. If it is not valid any reasons are
  * written to the log file and the server is not started.
  * @returns {boolean} true if valid enough.
@@ -81,34 +103,34 @@ function isConfigurationValid () {
     // at least one serverUrls
     isValid = QuickLogger.setConfiguration(configuration);
     if (configuration.listenURI == null) {
-        QuickLogger.logErrorEvent('No URI was set to listen for. Indicate a URI path on your server, for example /proxy');
+        QuickLogger.logErrorEvent(getStringTableEntry('No URI to listen for', null));
         isValid = false;
     } else if (configuration.listenURI.length == 0) {
-        QuickLogger.logErrorEvent('No URI was set to listen for. Indicate a URI path on your server, for example /proxy');
+        QuickLogger.logErrorEvent(getStringTableEntry('No URI to listen for', null));
         isValid = false;
     }
     if (configuration.serverUrls == null) {
-        QuickLogger.logErrorEvent('You must configure serverUrls.');
+        QuickLogger.logErrorEvent(getStringTableEntry('You must configure serverUrls', null));
         isValid = false;
     } else if (configuration.serverUrls.length == 0) {
-        QuickLogger.logErrorEvent('You must configure serverUrls for at least one service.');
+        QuickLogger.logErrorEvent(getStringTableEntry('You must configure one serverUrl', null));
         isValid = false;
     } else {
         for (i = 0; i < configuration.serverUrls.length; i ++) {
             serverUrl = configuration.serverUrls[i];
             if (serverUrl.errorMessage != '') {
                 isValid = false;
-                QuickLogger.logErrorEvent('Error(s) in the server URL definitions for ' + serverUrl.url + ': ' + serverUrl.errorMessage);
+                QuickLogger.logErrorEvent(getStringTableEntry('Error in server URL definition', {url: serverUrl.url, error: serverUrl.errorMessage}));
             }
         }
     }
     // TODO: We do not validate the individual server URLs but maybe we should?
     if (configuration.allowedReferrers == null) {
         configuration.allowedReferrers = ['*'];
-        QuickLogger.logWarnEvent('You should configure allowedReferrers to at least one referrer, use ["*"] to accept all connections. Defaulting to ["*"].');
+        QuickLogger.logWarnEvent(getStringTableEntry('You should configure at least one referrer', null));
     } else if (configuration.allowedReferrers.length == 0) {
         configuration.allowedReferrers = ['*'];
-        QuickLogger.logWarnEvent('You should configure allowedReferrers to at least one referrer, use ["*"] to accept all connections. Defaulting to ["*"].');
+        QuickLogger.logWarnEvent(getStringTableEntry('You should configure at least one referrer', null));
     }
     return isValid;
 }
@@ -133,6 +155,7 @@ function postParseConfigurationFile(json, schema) {
         urlParts,
         logLevel,
         i,
+        languageFile,
         invalidSetting;
 
     if (json !== null) {
@@ -149,6 +172,13 @@ function postParseConfigurationFile(json, schema) {
             proxyConfigSection = null;
         }
         if (proxyConfigSection !== undefined && proxyConfigSection !== undefined) {
+            if (proxyConfigSection.language !== undefined && proxyConfigSection.language != 'en') {
+                languageFile = '../conf/' + proxyConfigSection.language + '.json';
+                if (fs.existsSync(languageFile)) {
+                    configuration.language = proxyConfigSection.language;
+                    configuration.stringTable = require(languageFile);
+                }
+            }
             if (proxyConfigSection.useHTTPS !== undefined) {
                 if (typeof proxyConfigSection.useHTTPS === 'string') {
                     configuration.useHTTPS = proxyConfigSection.useHTTPS.toLocaleLowerCase().trim() === 'true' || proxyConfigSection.useHTTPS === '1';
@@ -210,10 +240,10 @@ function postParseConfigurationFile(json, schema) {
                     }
                 }
                 if (invalidSetting) {
-                    console.log('Undefined logging level ' + proxyConfigSection.logLevel + ' requested, logging level set to ERROR.');
+                    console.log(getStringTableEntry('Undefined logging level', {level: proxyConfigSection.logLevel}));
                 }
             } else {
-                console.log('No logging level requested, logging level set to ERROR.');
+                console.log(getStringTableEntry('No logging level requested', null));
             }
             // allowedReferrers can be a single string, items separated with comma, or an array of strings.
             // Make sure we end up with an array of strings.
@@ -398,7 +428,7 @@ function postParseConfigurationFile(json, schema) {
                     serverUrl.clientSecret = ProjectUtilities.getIfPropertySet(serverUrl, 'clientSecret', '');
                     serverUrl.oauth2Endpoint = ProjectUtilities.getIfPropertySet(serverUrl, 'oauth2Endpoint', defaultOAuthEndpoint);
                     if (serverUrl.clientId.length < 1 || serverUrl.clientSecret.length < 1 || serverUrl.oauth2Endpoint < 1) {
-                        serverUrl.errorMessage = 'When using OAuth a setting for clientId, clientSecret, and oauth2Endpoint must all be provided. At least one is missing.';
+                        serverUrl.errorMessage = getStringTableEntry('OAuth requires clientId, clientSecret, oauth2Endpoint', null);
                     }
                     if (serverUrl.oauth2Endpoint.charAt(serverUrl.oauth2Endpoint.length - 1) != '/') {
                         serverUrl.oauth2Endpoint += '/';
@@ -408,7 +438,7 @@ function postParseConfigurationFile(json, schema) {
                     serverUrl.username = ProjectUtilities.getIfPropertySet(serverUrl, 'username', '');
                     serverUrl.password = ProjectUtilities.getIfPropertySet(serverUrl, 'password', '');
                     if (serverUrl.username.length < 1 || serverUrl.password.length < 1) {
-                        serverUrl.errorMessage = 'When using username/password both must all be provided. At least one is missing.';
+                        serverUrl.errorMessage = getStringTableEntry('Must provide username/password', null);
                     }
                 }
                 if (ProjectUtilities.isPropertySet(serverUrl, 'accessToken')) {
@@ -441,6 +471,7 @@ function postParseConfigurationFile(json, schema) {
 function loadConfigurationFile (configFile) {
     var promise;
 
+    configuration.stringTable = require('../conf/en.json');
     promise = new Promise(function(resolvePromise, rejectPromise) {
         if (configFile == undefined || configFile == null || configFile.length == 0) {
             configFile = joinPath(defaultConfigurationFilePath, defaultConfigurationFileName);
@@ -448,7 +479,7 @@ function loadConfigurationFile (configFile) {
                 configFile += '.' + defaultConfigurationFileType;
             }
         }
-        QuickLogger.logInfoEvent('Loading configuration from ' + configFile);
+        QuickLogger.logInfoEvent(getStringTableEntry('Loading configuration from', {file: configFile}));
         if (ProjectUtilities.isFileTypeJson(configFile)) {
             loadJsonFile(configFile).then(function (jsonObject) {
                 postParseConfigurationFile(jsonObject, 'json');
@@ -456,10 +487,10 @@ function loadConfigurationFile (configFile) {
                 if (isConfigurationValid()) {
                     resolvePromise();
                 } else {
-                    rejectPromise(new Error('Configuration file not valid, check log or error console for more information.'));
+                    rejectPromise(new Error(getStringTableEntry('Configuration file not valid', null)));
                 }
             }, function (error) {
-                QuickLogger.logErrorEvent('!!! Invalid configuration file format. ' + error.toString() + ' !!!');
+                QuickLogger.logErrorEvent(getStringTableEntry('Invalid configuration file format', {error: error.toString()}));
             });
         } else {
             var xmlParser = new xml2js.Parser();
@@ -472,7 +503,7 @@ function loadConfigurationFile (configFile) {
                             if (isConfigurationValid()) {
                                 resolvePromise();
                             } else {
-                                rejectPromise(new Error('Configuration file not valid, check log or error console for more information.'));
+                                rejectPromise(new Error(getStringTableEntry('Configuration file not valid', null)));
                             }
                         } else {
                             rejectPromise(xmlError);
@@ -490,4 +521,4 @@ function loadConfigurationFile (configFile) {
 module.exports.configuration = configuration;
 module.exports.isConfigurationValid = isConfigurationValid;
 module.exports.loadConfigurationFile = loadConfigurationFile;
-
+module.exports.getStringTableEntry = getStringTableEntry;
