@@ -1,15 +1,18 @@
 # node.js ArcGIS Proxy Server
+
 This is an implementation of an ArcGIS proxy server using node.js. While this server can proxy most http requests, it is specifically designed to act on behalf of ArcGIS type services following the [ArcGIS Resource Proxy](https://github.com/Esri/resource-proxy/) specification. The proxy handles support for:
 
 * Accessing cross domain resources.
+* URL transformations.
 * Requests that exceed 2048 characters.
 * Accessing resources secured with ArcGIS token based authentication.
-* [OAuth 2.0 app login](https://developers.arcgis.com/en/authentication).
+* Accessing resources secured with [OAuth 2.0 app login](https://developers.arcgis.com/en/authentication).
 * Transaction logging.
-* Resource based rate limiting.
+* Resource based rate limiting to help manage credit consumption.
 
 ## Instructions
 
+* Install or update [node.js](https://nodejs.org/en/), version 6 LTS is recommended.
 * Download and unzip the .zip file or clone this repository. You can download [a released version](https://github.com/Esri/resource-proxy/releases) (recommended) or the [most recent daily build](https://github.com/Esri/resource-proxy/archive/master.zip).
 * install the node.js dependencies:
 
@@ -20,9 +23,9 @@ npm install
 * Edit the proxy configuration file:
   * Choose either one of (conf/config.json or conf/config.xml, but not both) configuration format.
   * Use a text editor to set up your proxy configuration settings.
-  * Decide which port your server should run on (default is 3692).
+  * Decide which port your server should listen on (default is 3692).
   * Determine which URLs you are going to proxy by editing the `serverUrls` section.
-  * Set your allowedReferrers. While "*" may be ok for testing we highly recommend whitelisting referrers in production.
+  * Set your `allowedReferrers`. While "*" may be ok for testing we highly recommend whitelisting referrers in production.
   * Review the full documentation for [proxy configuration settings](https://github.com/Esri/resource-proxy/#proxy-configuration-settings).
 * Start the node server from a command line:
 
@@ -52,7 +55,7 @@ Once you deploy to an infrastructure on the public internet replace `localhost` 
 
 ## Requirements
 
-* node.js version 6.0 or higher (recommended.)
+* [node.js](https://nodejs.org/en/) version 6.0 or higher (recommended.)
 * sudo access rights so you can install files, open a TCP/IP port.
 * File access read/write access for the log file and the sqlite database.
 * Server administration and networking background to securely run your server.
@@ -109,7 +112,7 @@ Esri welcomes contributions from anyone and everyone. Please see our [guidelines
 
 ## License
 
-Copyright 2016 Esri
+Copyright 2017 Esri
 
 Licensed under the Apache License, Version 2.0 (the "License");
 You may not use this file except in compliance with the License.
