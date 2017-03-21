@@ -12,6 +12,7 @@
     "Must provide username/password": "When using username/password both must be provided. At least one is missing.",
     "Missing HTTPS proxy configuration": "HTTPS proxy was requested but the necessary files [httpsPfxFile or httpsKeyFile, httpsCertificateFile] were not defined in configuration.",
     "Loading configuration from": "Loading configuration from {file}",
+    "Invalid static file path": "Invalid or inaccessible static file path {path}, this service will not be available.",
     "Proxy server not created": "Proxy server was not created, probably an OS system or memory issue.",
     "Proxy server startup exception": "Proxy server encountered an exception and is not able to start: {exception}.",
     "Integration tests complete startServer": "Integration tests completed from startServer.",

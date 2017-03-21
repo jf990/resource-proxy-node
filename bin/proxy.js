@@ -29,6 +29,7 @@ const path = require('path');
 const urlParser = require('url');
 const BufferHelper = require('bufferhelper');
 const OS = require('os');
+const nodeStatic = require('node-static');
 const RateMeter = require('./RateMeter');
 const ProjectUtilities = require('./ProjectUtilities');
 const QuickLogger = require('./QuickLogger');
@@ -42,6 +43,7 @@ const defaultTokenEndPoint = '/sharing/generateToken/';
 var configuration = Configuration.configuration;
 var httpServer;
 var proxyServer;
+var staticFileServer = null;
 var rateMeter = null;
 var serverStartTime = null;
 var attemptedRequests = 0;
@@ -905,56 +907,14 @@ function proxyServeFile(request, response) {
         if (action == '/') {
             responseStatus = 404;
             responseMessage = Configuration.getStringTableEntry('Resource not found', {url: action});
-        } else {
-            // serve our static assets from the local ../assets folder. TODO: consider making this a configuration setting.
-            var filePath = path.join(path.dirname(__dirname), 'assets', action).split('%20').join(' '),
-                fileDomain = require('domain').create();
-
-            // from this point we are running asynchronous so inside this function we must fully handle responses
-            fileDomain.on('error', function(fileError) {
-                responseStatus = 403;
-                sendErrorResponse(request.url, response, responseStatus, Configuration.getStringTableEntry('Resource not accessible', null));
-            });
-            fileDomain.run(function() {
-                fs.stat(filePath, function (fileError, fileStat) {
-                    if (fileError == null && fileStat != null) {
-                        // set the content type and length
-                        var fileType = path.extname(action),
-                            contentType = '',
-                            contentLength = fileStat.size;
-
-                        switch (fileType) {
-                            case '.gif':
-                                contentType = 'image/gif';
-                                break;
-                            case '.jpg':
-                            case '.jpeg':
-                                contentType = 'image/jpeg';
-                                break;
-                            case '.png':
-                                contentType = 'image/png';
-                                break;
-                            case '.ico':
-                                contentType = 'image/vnd.microsoft.icon';
-                                break;
-                            case '.txt':
-                                contentType = 'text/plain';
-                                break;
-                            default:
-                                responseStatus = 404;
-                                break;
-                        }
-                        if (contentType != '') {
-                            responseStatus = 200;
-                            response.writeHead(responseStatus, {'Content-Type': contentType, 'Content-Length': contentLength});
-                            fs.createReadStream(filePath).pipe(response);
-                        }
-                    } else {
-                        responseStatus = 404;
-                        sendErrorResponse(request.url, response, responseStatus, Configuration.getStringTableEntry('Resource not found', {url: request.url}));
-                    }
-                });
-            });
+        } else if (configuration.staticFilePath != null) {
+            // serve static assets requests from the local folder.
+            if (staticFileServer == null) {
+                staticFileServer = new nodeStatic.Server(configuration.staticFilePath);
+            }
+            if (staticFileServer != null) {
+                staticFileServer.serve(request, response);
+            }
         }
     } else {
         responseStatus = 405;

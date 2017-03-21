@@ -26,6 +26,7 @@ var configuration = {
     logFunction: null,
     localPingURL: '/ping',
     localStatusURL: '/status',
+    staticFilePath: null,
     port: 3333, // 80
     useHTTPS: false,
     httpsKeyFile: null,
@@ -318,6 +319,13 @@ function postParseConfigurationFile(json, schema) {
             }
             if (proxyConfigSection.statusPath !== undefined) {
                 configuration.localStatusURL = proxyConfigSection.statusPath;
+            }
+            if (proxyConfigSection.staticFilePath !== undefined) {
+                configuration.staticFilePath = proxyConfigSection.staticFilePath;
+                if ( ! fs.existsSync(configuration.staticFilePath)) {
+                    configuration.staticFilePath = null;
+                    console.log(getStringTableEntry('Invalid static file path', {path: proxyConfigSection.staticFilePath}));
+                }
             }
         }
 

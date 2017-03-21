@@ -11,6 +11,7 @@
         "listenURI": ["/proxy", "/sproxy"],
         "pingPath": "/ping",
         "statusPath": "/status",
+        "staticFilePath": "../assets",
         "allowedReferrers": "*"
     },
     "serverUrls": [

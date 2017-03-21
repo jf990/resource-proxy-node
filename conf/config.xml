@@ -10,7 +10,8 @@
              port="3692"
              listenURI="/proxy"
              pingPath="/ping"
-             statusPath="/status">
+             statusPath="/status"
+             staticFilePath="../assets">
     <serverUrls>
         <serverUrl url="http://services.arcgisonline.com"
                    test="http://localhost:3333/proxy/http://services.arcgisonline.com"
