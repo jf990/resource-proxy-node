@@ -132,6 +132,27 @@ module.exports.parseAndFixURLParts = function(url) {
 };
 
 /**
+ * Return a copied object
+ * @param urlParts
+ * @returns {*}
+ */
+module.exports.copyURLParts = function(urlParts) {
+    if (urlParts != null) {
+        var copiedUrlParts = urlParser.parse(urlParts.href);
+        copiedUrlParts.protocol = urlParts.protocol;
+        copiedUrlParts.host = urlParts.host;
+        copiedUrlParts.hostname = urlParts.hostname;
+        copiedUrlParts.pathname = urlParts.pathname;
+        copiedUrlParts.path = urlParts.path;
+        copiedUrlParts.port = urlParts.port;
+        copiedUrlParts.query = urlParts.query;
+        return copiedUrlParts;
+    } else {
+        return null;
+    }
+};
+
+/**
  * Break apart the full URL request and determine its constituent parts. This is a bit non-standard due
  * to the special case handling of ? and &. Examples:
  *     /proxy/http/host.domain.tld/path/path?q=1&t=2
@@ -491,10 +512,11 @@ module.exports.fullReferrerURLFromParts = function(urlParts) {
  *  - if port is not null, *, or 80 it will add port: to the url, otherwise it ignores port.
  *  - if path is * it uses / instead, however if path ends with * it will remain.
  *  - if there is a query string it will be appended to the end of the path.
- * @param urlParts
+ * @param urlParts {object} the url parts object we recombine into a full URL.
+ * @param overRideParameters {string} optional parameter. If provided, this overrides any parameters specified in the urlParts.
  * @returns {string}
  */
-module.exports.buildFullURLFromParts = function(urlParts) {
+module.exports.buildFullURLFromParts = function(urlParts, overRideParameters) {
     var url;
     url = urlParts.protocol == '*' ? (useHTTPS ? 'https' : 'http') : urlParts.protocol;
     url += '://';
@@ -502,12 +524,20 @@ module.exports.buildFullURLFromParts = function(urlParts) {
     if (urlParts.port != '*' && urlParts.port != 80) {
         url += ':' + urlParts.port;
     }
-    if (urlParts.pathname == '*' || urlParts.pathname.trim().length == 0) {
+    if (urlParts.pathname === undefined || urlParts.pathname == null || urlParts.pathname == '*' || urlParts.pathname.trim().length == 0) {
         url += '/';
     } else {
         url += urlParts.pathname;
     }
-    if (urlParts.query !== undefined && urlParts.query != null && urlParts.query.length > 0) {
+    if (overRideParameters !== undefined && overRideParameters != null && overRideParameters != '') {
+        if (typeof overRideParameters === "string") {
+            if (overRideParameters.charAt(0) == '?') {
+                url += overRideParameters;
+            } else {
+                url += '?' + overRideParameters;
+            }
+        }
+    } else if (urlParts.query !== undefined && urlParts.query != null && urlParts.query.length > 0) {
         if (urlParts.query.charAt(0) == '?') {
             url += urlParts.query;
         } else {

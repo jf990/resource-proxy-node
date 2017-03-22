@@ -261,3 +261,17 @@ module.exports.isFileTypeJson = function (fileName) {
     var regex = /\.json$/i;
     return regex.test(fileName, 'i');
 };
+
+/**
+ * Determine if object has no added properties.
+ * @param object
+ * @returns {boolean}
+ */
+module.exports.isEmptyObject = function (object) {
+    for (var property in object) {
+        if (object.hasOwnProperty(property)) {
+            return false;
+        }
+    }
+    return true;
+};

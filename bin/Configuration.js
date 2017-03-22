@@ -425,8 +425,14 @@ function postParseConfigurationFile(json, schema) {
                     serverUrl.ratePeriodSeconds = 0;
                 }
                 if (serverUrl.hostRedirect !== undefined && serverUrl.hostRedirect.trim().length > 0) {
+                    // If this entry specifies a host redirect then we will set everything up now instead of reparsing on every request
                     serverUrl.parsedHostRedirect = UrlFlexParser.parseAndFixURLParts(serverUrl.hostRedirect.trim());
                     serverUrl.isHostRedirect = true;
+                    if (serverUrl.parsedHostRedirect.path == '' || serverUrl.parsedHostRedirect.path == '*') {
+                        // if the redirect does not specify a path, use the path from the request. Otherwise we override the request path with the redirect path.
+                        serverUrl.parsedHostRedirect.path = serverUrl.path;
+                        serverUrl.parsedHostRedirect.pathname = serverUrl.path;
+                    }
                 } else {
                     serverUrl.isHostRedirect = false;
                 }

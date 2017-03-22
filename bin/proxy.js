@@ -455,6 +455,7 @@ function processValidatedRequest (urlRequestedParts, serverURLInfo, referrer, re
         parsedHostRedirect,
         hostname,
         contentType,
+        parametersCombined = '',
         parameters;
 
     if (serverURLInfo != null) {
@@ -482,17 +483,16 @@ function processValidatedRequest (urlRequestedParts, serverURLInfo, referrer, re
             } else if (ProjectUtilities.isPropertySet(serverURLInfo, 'token')) {
                 ProjectUtilities.addIfPropertyNotSet(parameters, 'token', serverURLInfo.token);
             }
-            // TODO: Test if parameters is empty
-            urlRequestedParts.query = ProjectUtilities.objectToQueryString(parameters);
-
-            // TODO: Combine GET parameters of request with config?
-
+            if ( ! ProjectUtilities.isEmptyObject(parameters)) {
+                parametersCombined = ProjectUtilities.objectToQueryString(parameters);
+            }
             if (serverURLInfo.isHostRedirect) {
-                // Host Redirect means we want to replace the host and path used in the request with the configured URL,
+                // Host Redirect means either replace the host and use path from the request when parsedHostRedirect has no path,
+                // or redirect to host and path from parsedHostRedirect when there is a path,
                 // then replace everything else received in the request (query, auth).
                 parsedHostRedirect = serverURLInfo.parsedHostRedirect;
                 hostname = parsedHostRedirect.hostname;
-                proxyRequest = UrlFlexParser.buildFullURLFromParts(parsedHostRedirect);
+                proxyRequest = UrlFlexParser.buildFullURLFromParts(parsedHostRedirect, parametersCombined);
             } else {
                 hostname = serverURLInfo.hostname;
                 proxyRequest = UrlFlexParser.buildURLFromReferrerRequestAndInfo(referrer, urlRequestedParts, serverURLInfo);

@@ -26,9 +26,9 @@
                    rateLimit="120"
                    rateLimitPeriod="60"
                    matchAll="true" />
-        <serverUrl url="demo.arcgis.com/arcgis/"
-                   test="http://localhost:3692/proxy/demo.arcgis.com/arcgis/"
-                   hostRedirect="http://services.arcgisonline.com/ArcGIS/rest/info/"
+        <serverUrl url="demo.arcgis.com/ArcGIS/rest/info/"
+                   test="http://localhost:3692/proxy/demo.arcgis.com/ArcGIS/rest/info/"
+                   hostRedirect="https://services.arcgisonline.com/ArcGIS/rest/info/"
                    rateLimit="120"
                    rateLimitPeriod="1"
                    matchAll="true" />
