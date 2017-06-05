@@ -45,3 +45,7 @@ jspm_packages
 
 node_modules/
 *.sqlite
+
+# Test configurations
+config-test.xml
+config-test.json

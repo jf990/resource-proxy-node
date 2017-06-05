@@ -7,24 +7,30 @@
 
 const fs = require('fs');
 const joinPath = require('path.join');
+const path = require('path');
 const loadJsonFile = require('load-json-file');
 const ProjectUtilities = require('./ProjectUtilities');
 const QuickLogger = require('./QuickLogger');
 const UrlFlexParser = require('./UrlFlexParser');
 const xml2js = require('xml2js');
 
-const defaultConfigurationFilePath = '../conf';
+const defaultRequireRootPath = '../';      // when run from npm command line
+const defaultConfigurationRootPath = '../'; // when run from npm command line
+const defaultConfigurationFilePath = 'conf';
 const defaultConfigurationFileName = 'config';
+const defaultConfigurationTestFileName = 'config-test';
 const defaultConfigurationFileType = 'xml';
 const defaultOAuthEndpoint = 'https://www.arcgis.com/sharing/oauth2/';
 
 var configuration = {
+    testMode: false,
     language: 'en',
     mustMatch: true,
     logLevel: QuickLogger.LOGLEVEL.ERROR.value,
     logConsole: true,
     logFunction: null,
     localPingURL: '/ping',
+    localEchoURL: '/echo',
     localStatusURL: '/status',
     staticFilePath: null,
     port: 3333, // 80
@@ -39,6 +45,19 @@ var configuration = {
     stringTable: null
 };
 var configurationComplete = false;
+
+/**
+ * Look at the command line for any configuration overrides.
+ */
+function parseCommandLineOptions() {
+    process.argv.forEach(function(value, index) {
+        console.log('argv[' + index + ']: ' + value);
+        if (value == 'test') {
+            configuration.testMode = true;
+            console.log('Setting TEST mode');
+        }
+    });
+}
 
 /**
  * Return true if the server URL definition for this resource is to support user login (user name+password). We use this to
@@ -66,6 +85,14 @@ function isAppLogin (serverURLInfo) {
     } else {
         return false;
     }
+}
+
+/**
+ * Allow read-only access to testMode setting.
+ * @returns {boolean}
+ */
+function isTestMode() {
+    return configuration.testMode;
 }
 
 /**
@@ -174,7 +201,7 @@ function postParseConfigurationFile(json, schema) {
         }
         if (proxyConfigSection !== undefined && proxyConfigSection !== undefined) {
             if (proxyConfigSection.language !== undefined && proxyConfigSection.language != 'en') {
-                languageFile = '../conf/' + proxyConfigSection.language + '.json';
+                languageFile = defaultRequireRootPath + defaultConfigurationFilePath + '/' + proxyConfigSection.language + '.json';
                 if (fs.existsSync(languageFile)) {
                     configuration.language = proxyConfigSection.language;
                     configuration.stringTable = require(languageFile);
@@ -317,11 +344,14 @@ function postParseConfigurationFile(json, schema) {
             if (proxyConfigSection.pingPath !== undefined) {
                 configuration.localPingURL = proxyConfigSection.pingPath;
             }
+            if (proxyConfigSection.echoPath !== undefined) {
+                configuration.localEchoURL = proxyConfigSection.echoPath;
+            }
             if (proxyConfigSection.statusPath !== undefined) {
                 configuration.localStatusURL = proxyConfigSection.statusPath;
             }
             if (proxyConfigSection.staticFilePath !== undefined) {
-                configuration.staticFilePath = proxyConfigSection.staticFilePath;
+                configuration.staticFilePath = defaultConfigurationRootPath + proxyConfigSection.staticFilePath;
                 if ( ! fs.existsSync(configuration.staticFilePath)) {
                     configuration.staticFilePath = null;
                     console.log(getStringTableEntry('Invalid static file path', {path: proxyConfigSection.staticFilePath}));
@@ -436,6 +466,19 @@ function postParseConfigurationFile(json, schema) {
                 } else {
                     serverUrl.isHostRedirect = false;
                 }
+                if (serverUrl.parameterOverride !== undefined && serverUrl.parameterOverride.toString().trim().length > 0) {
+                    serverUrl.parameterOverride = serverUrl.parameterOverride.toLowerCase();
+                    if (serverUrl.parameterOverride == 'referrer' || serverUrl.parameterOverride == 'true' || serverUrl.parameterOverride == '1') {
+                        serverUrl.parameterOverride = true;
+                    } else if (serverUrl.parameterOverride == 'config' || serverUrl.parameterOverride == 'configuration' || serverUrl.parameterOverride == 'false' || serverUrl.parameterOverride == '0') {
+                        serverUrl.parameterOverride = false;
+                    } else {
+                        serverUrl.errorMessage = getStringTableEntry('unexpected value for parameterOverride', {value: serverUrl.parameterOverride});
+                        serverUrl.parameterOverride = false;
+                    }
+                } else {
+                    serverUrl.parameterOverride = false;
+                }
                 serverUrl.mayRequireToken = false;
                 if (ProjectUtilities.isPropertySet(serverUrl, 'clientId') || ProjectUtilities.isPropertySet(serverUrl, 'clientSecret') || ProjectUtilities.isPropertySet(serverUrl, 'oauth2Endpoint')) {
                     serverUrl.clientId = ProjectUtilities.getIfPropertySet(serverUrl, 'clientId', '');
@@ -483,12 +526,23 @@ function postParseConfigurationFile(json, schema) {
  * @param configFile {string} path to the configuration file.
  */
 function loadConfigurationFile (configFile) {
-    var promise;
+    var promise,
+        stringTablePath;
 
-    configuration.stringTable = require('../conf/en.json');
+    try {
+        stringTablePath = defaultRequireRootPath + defaultConfigurationFilePath + '/en.json';
+        configuration.stringTable = require(stringTablePath);
+    } catch (exception) {
+        var currentPath = path.dirname(fs.realpathSync(__filename));
+        QuickLogger.logErrorEvent('Cannot load strings table from ' + stringTablePath + ' from ' + currentPath);
+    }
     promise = new Promise(function(resolvePromise, rejectPromise) {
         if (configFile == undefined || configFile == null || configFile.length == 0) {
-            configFile = joinPath(defaultConfigurationFilePath, defaultConfigurationFileName);
+            if (configuration.testMode) {
+                configFile = joinPath(defaultConfigurationRootPath + defaultConfigurationFilePath, defaultConfigurationTestFileName);
+            } else {
+                configFile = joinPath(defaultConfigurationRootPath + defaultConfigurationFilePath, defaultConfigurationFileName);
+            }
             if (defaultConfigurationFileType != null && defaultConfigurationFilePath.length > 0) {
                 configFile += '.' + defaultConfigurationFileType;
             }
@@ -524,6 +578,7 @@ function loadConfigurationFile (configFile) {
                         }
                     });
                 } else {
+                    console.log("File error on " + configFile + " at path " + path.dirname(fs.realpathSync(__filename)));
                     rejectPromise(fileError);
                 }
             });
@@ -532,7 +587,13 @@ function loadConfigurationFile (configFile) {
     return promise;
 }
 
+parseCommandLineOptions();
 module.exports.configuration = configuration;
+module.exports.isTestMode = isTestMode;
 module.exports.isConfigurationValid = isConfigurationValid;
 module.exports.loadConfigurationFile = loadConfigurationFile;
 module.exports.getStringTableEntry = getStringTableEntry;
+
+if (configuration.testMode) {
+    var test = require('./test.js');
+}

@@ -349,7 +349,10 @@ function unitTests () {
     console.log('isFileTypeJson for ' + testStr + ' result=' + (result ? 'true' : 'false'));
 
     console.log('TTTTT Local unit tests complete:');
+
+    if (ProxyJS && ProxyJS.ArcGISProxyIntegrationTest) {
+        ProxyJS.ArcGISProxyIntegrationTest(); // <== actually just queues the integration test: it cannot start until after the server is started.
+    }
 }
 
 unitTests();
-ProxyJS.ArcGISProxyIntegrationTest(); // <== actually just queues the integration test: it cannot start until after the server is started.

@@ -243,10 +243,12 @@ module.exports.tokenReplace = function (text, parameters) {
     var token,
         regexMatch;
 
-    for (token in parameters) {
-        if (parameters.hasOwnProperty(token)) {
-            regexMatch = new RegExp("\{" + token + "\}", 'g');
-            text = text.replace(regexMatch, parameters[token]);
+    if (Array.isArray(parameters) || (parameters !== null && typeof parameters === 'object')) {
+        for (token in parameters) {
+            if (parameters.hasOwnProperty(token)) {
+                regexMatch = new RegExp("\{" + token + "\}", 'g');
+                text = text.replace(regexMatch, parameters[token]);
+            }
         }
     }
     return text;

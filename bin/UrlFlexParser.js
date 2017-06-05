@@ -265,6 +265,9 @@ module.exports.parseURLRequest = function(url, listenUriList) {
         }
         result.listenPath = url;
         lookFor = '?'; // take anything after a ? as the query string
+        if (result.proxyPath == '') {
+            result.proxyPath = url;
+        }
         charDelimiter = result.proxyPath.indexOf(lookFor);
         if (charDelimiter >= 0) {
             result.query = result.proxyPath.substr(charDelimiter + 1);
@@ -604,15 +607,21 @@ module.exports.buildURLFromReferrerRequestAndInfo = function(referrer, urlReques
  * @param request - the node http/http request. It may also include parameters for the request.
  * @param urlParts - the parsed url parts of the request
  * @param serverURLInfo - the server url configuration matching the request. It may have its own parameters.
+ * @param requestOverridesConfig - true to prioritize request, false to prioritize config.
  * @returns {object} - recombined parameters.
  */
-module.exports.combineParameters = function(request, urlParts, serverURLInfo) {
+module.exports.combineParameters = function(request, urlParts, serverURLInfo, requestOverridesConfig) {
     var configuredParameters = {},
         requestParameters = null,
         key;
 
-    if (serverURLInfo.query !== undefined && serverURLInfo.query != null && serverURLInfo.query.length > 0) {
-        configuredParameters = ProjectUtilities.queryStringToObject(serverURLInfo.query);
+    if (typeof requestOverridesConfig === 'undefined') {
+        requestOverridesConfig = true;
+    }
+    if (requestOverridesConfig) {
+        if (serverURLInfo.query !== undefined && serverURLInfo.query != null && serverURLInfo.query.length > 0) {
+            configuredParameters = ProjectUtilities.queryStringToObject(serverURLInfo.query);
+        }
     }
     if (request.method == 'GET') {
         if (urlParts.query !== undefined && urlParts.query != null && urlParts.query.length > 0) {
@@ -624,6 +633,14 @@ module.exports.combineParameters = function(request, urlParts, serverURLInfo) {
     }
     if (requestParameters != null) {
         requestParameters = ProjectUtilities.queryStringToObject(requestParameters);
+        for (key in requestParameters) {
+            if (requestParameters.hasOwnProperty(key)) {
+                configuredParameters[key] = requestParameters[key];
+            }
+        }
+    }
+    if ( ! requestOverridesConfig && serverURLInfo.query != null) {
+        requestParameters = ProjectUtilities.queryStringToObject(serverURLInfo.query);
         for (key in requestParameters) {
             if (requestParameters.hasOwnProperty(key)) {
                 configuredParameters[key] = requestParameters[key];

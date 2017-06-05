@@ -1,7 +1,6 @@
 {
     "Configuration file not valid": "Archivo de configuración no válido, registro de comprobación o consola de errores para obtener más información.",
     "Invalid configuration file format": "!!! Formato de archivo de configuración no válido. {error} !!!",
-
     "No URI to listen for": "No URI was set to listen for. Indicate a URI path on your server, for example /proxy.",
     "You must configure serverUrls": "You must configure serverUrls.",
     "You must configure one serverUrl": "You must configure serverUrls for at least one service.",
@@ -13,6 +12,7 @@
     "Must provide username/password": "When using username/password both must be provided. At least one is missing.",
     "Missing HTTPS proxy configuration": "HTTPS proxy was requested but the necessary files [httpsPfxFile or httpsKeyFile, httpsCertificateFile] were not defined in configuration.",
     "Loading configuration from": "Cargando la configuración desde {file}",
+    "Invalid static file path": "Invalid or inaccessible static file path {path}, this service will not be available.",
     "Proxy server not created": "Proxy server was not created, probably an OS system or memory issue.",
     "Proxy server startup exception": "Proxy server encountered an exception and is not able to start: {exception}.",
     "Integration tests complete startServer": "Integration tests completed from startServer.",
@@ -32,7 +32,7 @@
     "Request error with info": "Solicitud de error: {error} ({code}) de {url}",
     "RateMeter failed on": "RateMeter failed on {url} from {referrer}: {error}.",
     "Metered resource status failed": "This is a metered resource but the server failed to determine the meter status of this resource.",
-    "RateMeter dissallowing access to": "RateMeter exceeded, dissallowing access to {url} from {referrer}.",
+    "RateMeter blocking access to": "RateMeter exceeded, blocking access to {url} from {referrer}.",
     "Metered requests exceeded": "This is a metered resource, number of requests have exceeded the rate limit interval.",
     "Status request from": "Solicitud de estado de {referrer}.",
     "System error processing request": "Solicitud de procesamiento de error del sistema: {message}.",
@@ -50,5 +50,7 @@
     "Internal error": "Internal error: proxy server is not operating.",
     "Proxy has not been set up for": "Request from {referrer}, proxy has not been set up for {path}.",
     "Proxy has not been set up for extra": "Make sure there is a serverUrl in the configuration file that matches {path}.",
-    "Could not generate a new token": "No pudimos generar un nuevo token para ti."
+    "Could not generate a new token": "No pudimos generar un nuevo token para ti.",
+    "unexpected value for parameterOverride": "Unexpected value for parameterOverride: {value}. Assuming 'referrer'.",
+    "Transform url to token endpoint": "Transformed {url} to {tokenEndpoint} in order to get token"
 }

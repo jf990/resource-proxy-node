@@ -1,7 +1,7 @@
 {
     "name": "arcgis-resource-proxy",
     "description": "ArcGIS Resource Proxy",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "author": "Esri Runtime",
     "contributors": [
         "john foster <jfoster@esri.com>"
@@ -26,7 +26,9 @@
     "main": "bin/proxy.js",
     "private": false,
     "dependencies": {
+        "body-parser": "latest",
         "bufferhelper": "latest",
+        "connect": "latest",
         "http-proxy": "latest",
         "load-json-file": "^2.0.0",
         "node-static": "latest",
